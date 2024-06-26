@@ -39,11 +39,11 @@ jobs:
       run: |
         sudo cp -r codeql/* /usr/local/
 
-    - name: Copy query files
+    - name: Download query files
       run: |
-        mkdir -p codeql-queries
-        curl -L -o codeql-queries/over_sampling.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/over_sampling.ql
-        curl -L -o codeql-queries/feature_selection.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/feature_selection.ql
+        curl -o ${{ github.workspace }}/over_sampling.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/over_sampling.ql
+        curl -o ${{ github.workspace }}/feature_selection.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/feature_selection.ql
+        curl -o ${{ github.workspace }}/qlpack.yml https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/qlpack.yml
 
     - name: Initialize CodeQL
       run: |
@@ -51,7 +51,7 @@ jobs:
 
     - name: Perform CodeQL Analysis
       run: |
-        /usr/local/codeql/codeql database analyze codeql-database codeql-queries/over_sampling.ql codeql-queries/feature_selection.ql --format=sarif-latest --output=results.sarif
+        /usr/local/codeql/codeql database analyze codeql-database ${{ github.workspace }}/over_sampling.ql ${{ github.workspace }}/feature_selection.ql --format=sarif-latest --output=results.sarif
 
     - name: Upload SARIF file
       uses: github/codeql-action/upload-sarif@v3
