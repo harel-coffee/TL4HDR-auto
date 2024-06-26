@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ '2.7', '3.x' ]
+        language: [ 'python' ]
 
     steps:
     - name: Checkout repository
@@ -24,7 +24,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.x'
 
     - name: Install dependencies
       run: |
@@ -47,11 +47,11 @@ jobs:
 
     - name: Install CodeQL packs
       run: |
-        /usr/local/codeql/codeql pack install
+        cd ${{ github.workspace }} && /usr/local/codeql/codeql pack install
 
     - name: Initialize CodeQL
       run: |
-        /usr/local/codeql/codeql database create codeql-database --language=python --source-root=.
+        /usr/local/codeql/codeql database create codeql-database --language=python --source-root=${{ github.workspace }}
 
     - name: Perform CodeQL Analysis
       run: |
