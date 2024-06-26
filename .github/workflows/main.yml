@@ -1,6 +1,64 @@
-1s
-Run /usr/local/codeql/codeql database analyze codeql-database ./over_sampling.ql ./feature_selection.ql --format=sarif-latest --output=results.sarif
-  
-Running queries.
-A fatal error occurred: ./over_sampling.ql is not a .ql file, .qls file, a directory, or a query pack specification.
-Error: Process completed with exit code 2.
+name: "CodeQL"
+
+on: [push, pull_request]
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; else echo "No requirements.txt found"; fi
+
+    - name: Download CodeQL CLI
+      run: |
+        curl -L -o codeql-linux64.zip https://github.com/github/codeql-cli-binaries/releases/download/v2.15.5/codeql-linux64.zip
+        unzip codeql-linux64.zip -d codeql
+
+    - name: Set up CodeQL CLI
+      run: |
+        sudo cp -r codeql/* /usr/local/
+
+    - name: Download query files
+      run: |
+        mkdir -p ${{ github.workspace }}/codeql-queries
+        curl -o ${{ github.workspace }}/codeql-queries/over_sampling.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/over_sampling.ql
+        curl -o ${{ github.workspace }}/codeql-queries/feature_selection.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/feature_selection.ql
+        curl -o ${{ github.workspace }}/codeql-queries/qlpack.yml https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/qlpack.yml
+
+    - name: Install CodeQL packs
+      run: |
+        cd ${{ github.workspace }}/codeql-queries && /usr/local/codeql/codeql pack install
+
+    - name: Initialize CodeQL
+      run: |
+        /usr/local/codeql/codeql database create codeql-database --language=python --source-root=${{ github.workspace }}
+
+    - name: Perform CodeQL Analysis
+      run: |
+        /usr/local/codeql/codeql database analyze codeql-database ${{ github.workspace }}/codeql-queries/over_sampling.ql ${{ github.workspace }}/codeql-queries/feature_selection.ql --format=sarif-latest --output=results.sarif
+
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: results.sarif
