@@ -39,12 +39,20 @@ jobs:
       run: |
         sudo cp -r codeql/* /usr/local/
 
-    - name: Download query files
+    - name: Create codeql-queries directory
       run: |
         mkdir -p ${{ github.workspace }}/codeql-queries
+
+    - name: Download query files
+      run: |
         curl -o ${{ github.workspace }}/codeql-queries/over_sampling.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/over_sampling.ql
         curl -o ${{ github.workspace }}/codeql-queries/feature_selection.ql https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/feature_selection.ql
-        curl -o ${{ github.workspace }}/codeql-queries/qlpack.yml https://raw.githubusercontent.com/harel-coffee/codeql-ml/main/qlpack.yml
+
+    - name: Create qlpack.yml
+      run: |
+        echo 'name: codeql-queries' > ${{ github.workspace }}/codeql-queries/qlpack.yml
+        echo 'version: 0.0.1' >> ${{ github.workspace }}/codeql-queries/qlpack.yml
+        echo 'libraryPathDependencies: codeql/python-all' >> ${{ github.workspace }}/codeql-queries/qlpack.yml
 
     - name: Install CodeQL packs
       run: |
